@@ -56,12 +56,12 @@ namespace MESAI
 		int ret;
 		m_sws_flags = SWS_BICUBIC;
 		m_frame_count=0;
-		
+
 		avcodec_register_all();
 		av_register_all();
-		
+
 		avformat_alloc_output_context2(&m_oc, NULL, NULL, filename);
-		
+
 		if (!m_oc) {
 			avformat_alloc_output_context2(&m_oc, NULL, "avi", filename);
 		}
@@ -91,22 +91,22 @@ namespace MESAI
 		st->id = m_oc->nb_streams-1;
 
 		m_c = st->codec;
-		
+
 		m_c->codec_id = m_fmt->video_codec;
-		m_c->bit_rate = m_AVIMOV_BPS;			//Bits Per Second 
+		m_c->bit_rate = m_AVIMOV_BPS;			//Bits Per Second
 		m_c->width    = m_AVIMOV_WIDTH;			//Note Resolution must be a multiple of 2!!
 		m_c->height   = m_AVIMOV_HEIGHT;		//Note Resolution must be a multiple of 2!!
 		m_c->time_base.den = m_AVIMOV_FPS;		//Frames per second
 		m_c->time_base.num = 1;
 		m_c->gop_size      = m_AVIMOV_GOB;		// Intra frames per x P frames
 		m_c->pix_fmt       = AV_PIX_FMT_YUV420P;//Do not change this, H264 needs YUV format not RGB
-	
+
 
 		if (m_oc->oformat->flags & AVFMT_GLOBALHEADER)
-			m_c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+			m_c->flags |= AV_CODEC_FLAG_GLOBAL_HEADER;
 
 		m_video_st=st;
-		
+
 
 		AVCodecContext *c = m_video_st->codec;
 
@@ -139,7 +139,7 @@ namespace MESAI
 		}
 
 		bufferSize = ret;
-		
+
 		av_dump_format(m_oc, 0, filename, 1);
 
 		if (!(m_fmt->flags & AVFMT_NOFILE)) {
@@ -148,9 +148,9 @@ namespace MESAI
 				return;
 			}
 		}
-		
+
 		ret = avformat_write_header(m_oc, NULL);
-		
+
 		if (ret < 0) {
 			return;
 		}
@@ -164,14 +164,14 @@ namespace MESAI
 	}
 
 	void FFmpegH264Encoder::WriteFrame(uint8_t * RGBFrame )
-	{	
+	{
 
 		memcpy(m_src_picture->data[0], RGBFrame, bufferSize);
 
 		sws_scale(sws_ctx,
 					m_src_picture->data, m_src_picture->linesize,
 					0, m_c->height, m_dst_picture->data, m_dst_picture->linesize);
-		
+
 
         AVPacket pkt = { 0 };
 		int got_packet;
@@ -180,12 +180,12 @@ namespace MESAI
 		int ret = 0;
 
 		ret = avcodec_encode_video2(m_c, &pkt, m_dst_picture, &got_packet);
-		
+
 		if (ret < 0) {
 			return;
 		}
 
-		if (!ret && got_packet && pkt.size) 
+		if (!ret && got_packet && pkt.size)
 		{
 			pkt.stream_index = m_video_st->index;
 			FrameStructure * frame = new FrameStructure();
@@ -214,7 +214,7 @@ namespace MESAI
 
 		m_frame_count++;
 		m_dst_picture->pts += av_rescale_q(1, m_video_st->codec->time_base, m_video_st->time_base);
-		
+
 		onFrame();
 	}
 
@@ -226,8 +226,8 @@ namespace MESAI
 		m_AVIMOV_FPS=FPS;		//Movie frames per second
 		m_AVIMOV_GOB=GOB;		//I frames per no of P frames, see note below!
 		m_AVIMOV_BPS=BitPerSecond; //Bits per second, if this is too low then movie will become garbled
-		
-		SetupCodec(m_filename.c_str(),AV_CODEC_ID_H264);	
+
+		SetupCodec(m_filename.c_str(),AV_CODEC_ID_H264);
 	}
 
 	void FFmpegH264Encoder::CloseCodec()
@@ -255,13 +255,13 @@ namespace MESAI
 
 	void FFmpegH264Encoder::CloseVideo()
 	{
-		CloseCodec();	
+		CloseCodec();
 	}
 
 	char FFmpegH264Encoder::GetFrame(u_int8_t** FrameBuffer, unsigned int *FrameSize)
-	{	
+	{
 		if(!outqueue.empty())
-		{	
+		{
 			FrameStructure * frame;
 			frame  = outqueue.front();
 			*FrameBuffer = (uint8_t*)frame->dataPointer;
@@ -282,7 +282,7 @@ namespace MESAI
 		if(!outqueue.empty())
 		{
 			FrameStructure * frame = outqueue.front();
-			outqueue.pop();	
+			outqueue.pop();
 			delete frame;
 		}
 		pthread_mutex_unlock(&outqueue_mutex);

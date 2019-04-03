@@ -15,12 +15,13 @@
 #include <functional>
 
 extern "C" {
-	
+
 	#include <stdlib.h>
 	#include <stdio.h>
 	#include <string.h>
 	#include <math.h>
 	#include <libavutil/opt.h>
+	#include <libavcodec/avcodec.h>
 	#include <libavutil/mathematics.h>
 	#include <libavformat/avformat.h>
 	#include <libswscale/swscale.h>
@@ -48,20 +49,20 @@ namespace MESAI
 	public:
 		FFmpegH264Encoder();
 		~FFmpegH264Encoder();
-		
+
 		void setCallbackFunctionFrameIsReady(std::function<void()> func);
-		
+
 		void SetupVideo(std::string filename, int Width, int Height, int FPS, int GOB, int BitPerSecond);
 		void CloseVideo();
 		void SetupCodec(const char *filename, int codec_id);
 		void CloseCodec();
-		
 
-		void SendNewFrame(uint8_t * RGBFrame);		
+
+		void SendNewFrame(uint8_t * RGBFrame);
 		void WriteFrame(uint8_t * RGBFrame);
 		char ReleaseFrame();
 
-		void run();	
+		void run();
 		char GetFrame(u_int8_t** FrameBuffer, unsigned int *FrameSize);
 
 	private:
